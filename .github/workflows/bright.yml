@@ -1,4 +1,5 @@
 name: Bright
+
 on:
   pull_request:
     branches:
@@ -13,38 +14,26 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4.2.2
 
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4.1.0
         with:
-          node-version: 22.x
+          node-version: 22
 
-      - name: Install application dependencies
+      - name: Install SecTester dependencies
         run: |
-          npm install
+          npm i --save=false --prefix .brightsec @sectester/core @sectester/repeater @sectester/scan @sectester/runner @sectester/reporter
 
-      - name: Build Docker image and start application
+      - name: Build and start application
         run: |
           docker build -t juice-shop .
           docker run -d -p 3000:3000 juice-shop
 
       - name: Wait for application to be ready
         run: |
-          until nc -zv 127.0.0.1 3000; do
-            echo "Waiting for application to be ready..."
-            sleep 5
-          done
-
-      - name: Use Node.js latest
-        uses: actions/setup-node@v4
-        with:
-          node-version: '>=22'
-
-      - name: Install SecTesterJS dependencies
-        run: |
-          npm i --save=false --prefix .brightsec @sectester/core @sectester/repeater @sectester/scan @sectester/runner @sectester/reporter
+          for i in {1..30}; do nc -z 127.0.0.1 3000 && exit 0 || sleep 5; done; exit 1
 
       - name: Run security tests
         env:

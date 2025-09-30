@@ -17,23 +17,23 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4.2.2
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js
         uses: actions/setup-node@v4.1.0
         with:
-          node-version: 22
+          node-version: '22'
 
-      - name: Install SecTester dependencies
-        run: |
-          npm i --save=false --prefix .brightsec @sectester/core @sectester/repeater @sectester/scan @sectester/runner @sectester/reporter
-
-      - name: Build and start application
+      - name: Build and run Juice Shop
         run: |
           docker build -t juice-shop .
           docker run -d -p 3000:3000 juice-shop
 
-      - name: Wait for application to be ready
+      - name: Wait for Juice Shop to be ready
         run: |
           for i in {1..30}; do nc -z 127.0.0.1 3000 && exit 0 || sleep 5; done; exit 1
+
+      - name: Install SecTester dependencies
+        run: |
+          npm i --save=false --prefix .brightsec @sectester/core @sectester/repeater @sectester/scan @sectester/runner @sectester/reporter
 
       - name: Run security tests
         env:
@@ -42,6 +42,6 @@ jobs:
           BRIGHT_AUTH_ID: ${{ vars.BRIGHT_AUTH_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRIGHT_TOKEN: ${{ secrets.BRIGHT_TOKEN }}
-          BRIGHT_TARGET_URL: http://127.0.0.1:3000
+          BRIGHT_TARGET_URL: 'http://127.0.0.1:3000'
         run: |
           node --experimental-transform-types --experimental-strip-types --experimental-detect-module --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test-force-exit --test-concurrency=4 --test .brightsec/tests/*.test.ts

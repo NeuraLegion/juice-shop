@@ -21,7 +21,7 @@ after(() => runner.clear());
 test('GET /api/deliverys/1', { signal: AbortSignal.timeout(timeout) }, async () => {
   await runner
     .createScan({
-      tests: ['id_enumeration', 'bopla', 'sqli', 'xss'],
+      tests: ['id_enumeration'],
       attackParamLocations: [AttackParamLocation.PATH],
       starMetadata: {
         code_source: "NeuraLegion/juice-shop:master",

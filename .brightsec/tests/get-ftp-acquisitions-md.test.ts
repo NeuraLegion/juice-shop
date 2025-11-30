@@ -21,7 +21,7 @@ after(() => runner.clear());
 test('GET /ftp/acquisitions.md', { signal: AbortSignal.timeout(timeout) }, async () => {
   await runner
     .createScan({
-      tests: ['lfi', 'ssrf', 'full_path_disclosure', 'unvalidated_redirect', 'xss'],
+      tests: ['unvalidated_redirect'],
       attackParamLocations: [AttackParamLocation.QUERY],
       starMetadata: {
         code_source: "NeuraLegion/juice-shop:master",

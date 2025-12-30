@@ -1,9 +1,9 @@
 name: Bright
 
 on:
-  pull_request:
+  push:
     branches:
-      - '**'
+      - 'bench/fix_workflow_tc01'
 
 permissions:
   checks: write

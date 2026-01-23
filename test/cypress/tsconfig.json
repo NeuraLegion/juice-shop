@@ -4,5 +4,5 @@
     "lib": ["es5", "dom", "ES2018"],
     "types": ["cypress", "node"]
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "plugins/index.ts"]
 }

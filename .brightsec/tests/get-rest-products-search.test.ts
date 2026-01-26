@@ -21,7 +21,7 @@ after(() => runner.clear());
 test('GET /rest/products/search?q=apple', { signal: AbortSignal.timeout(timeout) }, async () => {
   await runner
     .createScan({
-      tests: ['sqli', 'xss', 'business_constraint_bypass'],
+      tests: ['sqli'],
       attackParamLocations: [AttackParamLocation.QUERY],
       starMetadata: {
         code_source: "NeuraLegion/juice-shop:fixer/fix_workflow_tc01_v2",

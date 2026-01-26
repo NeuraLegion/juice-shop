@@ -70,7 +70,10 @@ module.exports = function searchProducts () {
         }
         res.json(utils.queryResultToJson(products))
       }).catch((error: ErrorWithParent) => {
-        next(error.parent)
+        // Send a generic error message to the client to prevent information leakage
+        res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' })
+        // Log the detailed error for internal debugging
+        console.error(error.parent)
       })
   }
 }

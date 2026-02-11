@@ -3,6 +3,7 @@ COPY . /juice-shop
 WORKDIR /juice-shop
 RUN npm i -g typescript ts-node
 RUN npm install --unsafe-perm
+RUN npm run build:server
 RUN rm -rf frontend/node_modules
 RUN rm -rf frontend/.angular
 RUN rm -rf frontend/src/assets
@@ -46,6 +47,7 @@ LABEL maintainer="Bjoern Kimminich <bjoern.kimminich@owasp.org>" \
     org.opencontainers.image.created=$BUILD_DATE
 WORKDIR /juice-shop
 COPY --from=installer --chown=65532:0 /juice-shop .
+COPY --from=installer --chown=65532:0 /juice-shop/build ./build
 COPY --chown=65532:0 --from=libxmljs-builder /juice-shop/node_modules/libxmljs ./node_modules/libxmljs
 USER 65532
 EXPOSE 3000

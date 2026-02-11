@@ -4,6 +4,7 @@ WORKDIR /juice-shop
 RUN npm i -g typescript ts-node
 RUN npm install --unsafe-perm
 RUN npm run build:server
+RUN ls -l build
 RUN rm -rf frontend/node_modules
 RUN rm -rf frontend/.angular
 RUN rm -rf frontend/src/assets

@@ -1,9 +1,8 @@
-FROM node:20-bookworm as installer
+FROM node:20-buster as installer
 COPY . /juice-shop
 WORKDIR /juice-shop
 RUN npm i -g typescript ts-node
 RUN npm install --unsafe-perm
-RUN npm run build:server
 RUN rm -rf frontend/node_modules
 RUN rm -rf frontend/.angular
 RUN rm -rf frontend/src/assets
@@ -22,7 +21,7 @@ RUN npm prune --omit=dev
 RUN npm dedupe --omit=dev
 
 # workaround for libxmljs startup error
-FROM node:20-bookworm as libxmljs-builder
+FROM node:20-buster as libxmljs-builder
 WORKDIR /juice-shop
 RUN apt-get update && apt-get install -y build-essential python3
 COPY --from=installer /juice-shop/node_modules ./node_modules

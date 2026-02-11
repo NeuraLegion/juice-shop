@@ -18,8 +18,6 @@
     ]
   },
   "include" : [
-    "app.ts",
-    "server.ts",
     "cypress/**/*.ts",
     "data/**/*.ts",
     "lib/**/*.ts",
@@ -29,12 +27,14 @@
     "test/**/*.ts",
     "views/**/*.ts",
     "views/**/*.js",
-    "rsn/**/*.ts"
+    "rsn/**/*.ts",
+    "*.ts"
   ],
   "exclude": [
     "node_modules",
     "frontend",
     "dist",
+    "build",
     "vagrant",
     "data/static/codefixes/**",
     "**/*.d.ts"

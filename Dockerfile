@@ -1,7 +1,7 @@
 FROM node:20-bookworm as installer
 COPY . /juice-shop
 WORKDIR /juice-shop
-RUN npm i -g typescript@~4.6.0 ts-node
+RUN npm i -g typescript@^4.9.5 ts-node
 RUN npm install --unsafe-perm
 RUN npm run build:server
 RUN rm -rf frontend/node_modules

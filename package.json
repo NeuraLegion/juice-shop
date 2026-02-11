@@ -182,7 +182,8 @@
     "web3": "^4.0.3",
     "winston": "^3.3.3",
     "yaml-schema-validator": "^1.2.2",
-    "z85": "^0.0.2"
+    "z85": "^0.0.2",
+    "@types/config": "^3.3.3"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "^1.12.0",
@@ -191,7 +192,6 @@
     "@types/chai-as-promised": "^7.1.3",
     "@types/clarinet": "^0.12.1",
     "@types/compression": "^1.7.0",
-    "@types/config": "^3.3.3",
     "@types/cookie-parser": "^1.4.2",
     "@types/cors": "^2.8.9",
     "@types/cross-spawn": "^6.0.2",

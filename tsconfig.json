@@ -18,7 +18,6 @@
     ]
   },
   "include" : [
-    "cypress/**/*.ts",
     "data/**/*.ts",
     "lib/**/*.ts",
     "lib/**/*.js",
@@ -37,6 +36,7 @@
     "build",
     "vagrant",
     "data/static/codefixes/**",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "cypress.config.ts"
   ]
 }

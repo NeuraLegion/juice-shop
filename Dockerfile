@@ -49,4 +49,4 @@ COPY --from=installer --chown=65532:0 /juice-shop .
 COPY --chown=65532:0 --from=libxmljs-builder /juice-shop/node_modules/libxmljs ./node_modules/libxmljs
 USER 65532
 EXPOSE 3000
-CMD ["node", "app.ts"]
+CMD ["node", "build/app.js"]

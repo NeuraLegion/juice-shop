@@ -52,4 +52,4 @@ COPY --from=installer /usr/local/bin/ts-node /usr/local/bin/ts-node
 COPY --from=installer /usr/local/lib/node_modules/typescript /usr/local/lib/node_modules/typescript
 USER 65532
 EXPOSE 3000
-CMD ["ts-node", "app.ts"]
+CMD ["/usr/local/bin/ts-node", "app.ts"]

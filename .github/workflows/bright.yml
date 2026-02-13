@@ -22,8 +22,9 @@ jobs:
           docker build -t juice-shop . && docker run -d -p 3000:3000 juice-shop
 
       - name: Wait for application to be ready
+        id: healthcheck
         run: |
-          for i in {1..30}; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5; done; exit 1
+          for i in {1..60}; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5; done; docker logs $(docker ps -aqf "name=juice-shop") || true; exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

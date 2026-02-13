@@ -21,7 +21,7 @@ RUN npm prune --omit=dev
 RUN npm dedupe --omit=dev
 
 # workaround for libxmljs startup error
-FROM node:20-buster as libxmljs-builder
+FROM node:20-bookworm as libxmljs-builder
 WORKDIR /juice-shop
 RUN apt-get update && apt-get install -y build-essential python3
 COPY --from=installer /juice-shop/node_modules ./node_modules

@@ -19,11 +19,11 @@ jobs:
 
       - name: Build and run Juice Shop
         run: |
-          docker build -t juice-shop . && docker run -d -p 3000:3000 juice-shop
+          docker build -t juice-shop . && docker run -d --name juice-shop -p 3000:3000 juice-shop
 
       - name: Wait for application to be ready
         run: |
-          for i in {1..30}; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5; done; exit 1
+          for i in {1..30}; do curl -sS -o /dev/null http://127.0.0.1:3000 && exit 0 || sleep 5; done; docker logs juice-shop; exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

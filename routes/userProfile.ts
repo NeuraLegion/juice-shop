@@ -23,11 +23,11 @@ const stripControlChars = (value: string) => Array.from(value).filter((char) => 
   return code > 31 && code !== 127
 }).join('')
 
-function favicon() {
+function favicon () {
   return utils.extractFilename(config.get('application.favicon'))
 }
 
-export function getUserProfile() {
+export function getUserProfile () {
   return async (req: Request, res: Response, next: NextFunction) => {
     let template: string
     try {

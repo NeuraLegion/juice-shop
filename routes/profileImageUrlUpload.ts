@@ -18,7 +18,7 @@ const stripControlChars = (value: string) => Array.from(value).filter((char) => 
   return code > 31 && code !== 127
 }).join('')
 
-export function profileImageUrlUpload() {
+export function profileImageUrlUpload () {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (req.body.imageUrl !== undefined) {
       const url = req.body.imageUrl

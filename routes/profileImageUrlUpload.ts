@@ -13,7 +13,12 @@ import { UserModel } from '../models/user'
 import * as utils from '../lib/utils'
 import logger from '../lib/logger'
 
-export function profileImageUrlUpload () {
+const stripControlChars = (value: string) => Array.from(value).filter((char) => {
+  const code = char.charCodeAt(0)
+  return code > 31 && code !== 127
+}).join('')
+
+export function profileImageUrlUpload() {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (req.body.imageUrl !== undefined) {
       const url = req.body.imageUrl
@@ -32,7 +37,7 @@ export function profileImageUrlUpload () {
         } catch (error) {
           try {
             const user = await UserModel.findByPk(loggedInUser.data.id)
-            await user?.update({ profileImage: url })
+            await user?.update({ profileImage: stripControlChars(url) })
             logger.warn(`Error retrieving user profile image: ${utils.getErrorMessage(error)}; using image link directly`)
           } catch (error) {
             next(error)

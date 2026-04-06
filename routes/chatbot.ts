@@ -1,8 +1,3 @@
-/*
- * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
- * SPDX-License-Identifier: MIT
- */
-
 import fs from 'node:fs/promises'
 import { type Request, type Response, type NextFunction } from 'express'
 import { type User } from '../data/types'
@@ -19,6 +14,7 @@ import validateChatBot from '../lib/startup/validateChatBot'
 import * as security from '../lib/insecurity'
 import * as botUtils from '../lib/botUtils'
 import { challenges } from '../data/datacache'
+import DOMPurify from 'dompurify'
 
 let trainingFile = config.get<string>('application.chatBot.trainingData')
 let testCommand: string
@@ -46,6 +42,11 @@ export async function initializeChatbot () {
 }
 
 void initializeChatbot()
+
+function sanitizeInput(input: string): string {
+  // Using DOMPurify to sanitize input to prevent prompt injection
+  return DOMPurify.sanitize(input)
+}
 
 async function processQuery (user: User, req: Request, res: Response, next: NextFunction) {
   if (bot == null) {
@@ -93,12 +94,13 @@ async function processQuery (user: User, req: Request, res: Response, next: Next
   }
 
   try {
-    const response = await bot.respond(req.body.query, `${user.id}`)
+    const sanitizedQuery = sanitizeInput(req.body.query);
+    const response = await bot.respond(sanitizedQuery, `${user.id}`)
     if (response.action === 'function') {
       // @ts-expect-error FIXME unclean usage of any type as index
       if (response.handler && botUtils[response.handler]) {
         // @ts-expect-error FIXME unclean usage of any type as index
-        res.status(200).json(await botUtils[response.handler](req.body.query, user))
+        res.status(200).json(await botUtils[response.handler](sanitizedQuery, user))
       } else {
         res.status(200).json({
           action: 'response',

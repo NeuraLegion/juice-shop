@@ -43,7 +43,7 @@ export async function initializeChatbot () {
 
 void initializeChatbot()
 
-function sanitizeInput(input: string): string {
+function sanitizeInput (input: string): string {
   // Using DOMPurify to sanitize input to prevent prompt injection
   return DOMPurify.sanitize(input)
 }
@@ -94,7 +94,7 @@ async function processQuery (user: User, req: Request, res: Response, next: Next
   }
 
   try {
-    const sanitizedQuery = sanitizeInput(req.body.query);
+    const sanitizedQuery = sanitizeInput(req.body.query)
     const response = await bot.respond(sanitizedQuery, `${user.id}`)
     if (response.action === 'function') {
       // @ts-expect-error FIXME unclean usage of any type as index

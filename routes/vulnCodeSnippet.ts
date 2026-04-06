@@ -31,7 +31,7 @@ const setStatusCode = (error: any) => {
 
 const sanitizeChallengeKey = (challengeKey: string) => {
   // Simple validation to ensure challenge key is alphanumeric.
-  return /^[a-zA-Z0-9_-]+$/.test(challengeKey);
+  return /^[a-zA-Z0-9_-]+$/.test(challengeKey)
 }
 
 export const retrieveCodeSnippet = async (challengeKey: string) => {
@@ -44,13 +44,13 @@ export const retrieveCodeSnippet = async (challengeKey: string) => {
 
 export const serveCodeSnippet = () => async (req: Request<SnippetRequestBody, Record<string, unknown>, Record<string, unknown>>, res: Response, next: NextFunction) => {
   try {
-    const challengeKey = req.params.challenge;
-    
+    const challengeKey = req.params.challenge
+
     if (!sanitizeChallengeKey(challengeKey)) {
       res.status(400).json({ status: 'error', error: 'Invalid challenge key format.' })
-      return;
+      return
     }
-    
+
     const snippetData = await retrieveCodeSnippet(challengeKey)
     if (snippetData == null) {
       res.status(404).json({ status: 'error', error: `No code challenge for challenge key: ${challengeKey}` })

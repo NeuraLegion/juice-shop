@@ -3,7 +3,7 @@ name: Bright
 on:
   push:
     branches:
-      - 'bench/fix_workflow_tc01'
+      - 'bench/fix_workflow_tc01-bullseye'
 
 permissions:
   checks: write

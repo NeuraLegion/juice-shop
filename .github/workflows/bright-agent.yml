@@ -1,0 +1,124 @@
+# Bright Agent — GitHub Actions workflow for OWASP Juice Shop
+#
+# Agentic DAST: checks out this repo, boots the app, scans the live endpoints,
+# and commits/PRs verified fixes.
+#
+# The workflow runs on two triggers:
+#
+#   • workflow_dispatch → manual full scan, launched by hand on a chosen branch.
+#   • pull_request      → PR-scoped diff scan; reacts INTO the PR (commits fixes
+#                         to its head branch, sticky comment, "Bright Agent" status).
+#
+# Runner prerequisites: Docker, Docker Compose, Git, curl, sha256sum (all on
+# GitHub-hosted `ubuntu-latest`).
+#
+# Required repository secrets:
+#     BRIGHT_TOKEN      Bright API token from https://app.brightsec.com
+#     INFERENCE_TOKEN   API token for your OpenAI-compatible inference endpoint
+#   and one repository variable:
+#     INFERENCE_URL     that endpoint's base URL (OpenAI, GitHub Models, Ollama, …)
+#
+# Repo access uses the built-in GITHUB_TOKEN (see `permissions:`).
+
+name: Bright Agent (DAST)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
+
+# contents: write     → commit fixes onto the (PR head or scan) branch
+# pull-requests: write → open/update the PR + summary comment + reactions
+# statuses: write     → set the "Bright Agent" commit status
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+
+# One run per PR; else per ref (manual dispatch).
+concurrency:
+  group: bright-agent-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bright-agent:
+    # Trigger gates:
+    #  • pull_request : same-repo PRs only (GITHUB_TOKEN is read-only on forks,
+    #                   so the agent couldn't push fixes or comment anyway).
+    #  • workflow_dispatch: always.
+    if: >-
+      (github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      # Runner platform/arch: linux-x64 | linux-arm64 | darwin-x64 | darwin-arm64
+      ASSET: bright-agent-linux-x64
+    steps:
+      # Check out the tree to scan. PR → the PR head branch (so fixes commit
+      # back to it); manual dispatch → the chosen ref. Download the binary
+      # OUTSIDE this checkout so it's never swept into a fix commit.
+      - uses: actions/checkout@v5
+        with:
+          ref: >-
+            ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.ref)
+              || github.ref }}
+          fetch-depth: 0
+
+      - name: Download & verify Bright Agent
+        working-directory: ${{ runner.temp }}
+        run: |
+          # Latest release. To pin a version, replace 'latest/download' with
+          # 'download/<tag>', e.g. .../releases/download/v0.1.1
+          base="https://github.com/NeuraLegion/bright-agent-dist/releases/latest/download"
+          curl -fsSL -o "${ASSET}" "${base}/${ASSET}"
+          curl -fsSL -o "${ASSET}.sha256" "${base}/${ASSET}.sha256"
+          sha256sum -c "${ASSET}.sha256"
+          chmod +x "${ASSET}"
+
+      - name: Show all available env variables
+        run: env | sort
+
+      - name: Run Bright Agent
+        env:
+          # Run against the checked-out tree. REPOSITORY_URL is derived from the
+          # checkout's `origin` remote (set REPOSITORY_URL to override).
+          LOCAL_REPO_PATH: ${{ github.workspace }}
+          REPO_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRIGHT_TOKEN: ${{ secrets.BRIGHT_TOKEN }}
+          INFERENCE_URL: ${{ vars.INFERENCE_URL }}
+          INFERENCE_TOKEN: ${{ secrets.INFERENCE_TOKEN }}
+          # On pull_request, the agent auto-detects GITHUB_BASE_REF and scopes
+          # the scan to the diff. Set SCAN_SCOPE=changed to force diff-only
+          # (bails on docs-only PRs) or SCAN_SCOPE=full to force a full scan.
+          # SCAN_SCOPE: changed
+          # --- Detailed stats & diagnostics ---
+          BRIGHT_DEBUG: "1"
+          BRIGHT_DUMP_TURNS: "1"
+          BRIGHT_DUMP_DIR: ${{ runner.temp }}/bright-dumps
+          # Optional:
+          # AI_MODEL: gpt-5.4-mini
+        run: "${{ runner.temp }}/${{ env.ASSET }}"
+
+      # --- Artifact uploads (always run, even on failure) ---
+
+      - name: Upload Bright Agent logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bright-agent-logs
+          path: ~/.bright-agent/logs/
+          if-no-files-found: ignore
+
+      - name: Upload LLM turn dumps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bright-agent-turn-dumps
+          path: ${{ runner.temp }}/bright-dumps/
+          if-no-files-found: ignore
+
+# NOTE: commits/PRs/comments made with GITHUB_TOKEN do not trigger your other
+# workflows (GitHub's anti-recursion rule). To have fix commits re-run your
+# repo's CI, use a PAT instead:
+#     REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}

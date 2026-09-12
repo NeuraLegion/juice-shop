@@ -18,9 +18,8 @@
 # Required repository secrets:
 #     BRIGHT_TOKEN      Bright API token from https://app.brightsec.com
 #     INFERENCE_TOKEN   API token for your OpenAI-compatible inference endpoint
-#   and repository variables:
+#   and repository variable:
 #     INFERENCE_URL     that endpoint's base URL (OpenAI, GitHub Models, Ollama, …)
-#     BRIGHT_PROJECT_ID (optional) Bright project ID for the scan
 #
 # Repo access uses the built-in GITHUB_TOKEN (see `permissions:`).
 
@@ -106,7 +105,6 @@ jobs:
           BRIGHT_TOKEN: ${{ secrets.BRIGHT_TOKEN }}
           INFERENCE_URL: ${{ vars.INFERENCE_URL }}
           INFERENCE_TOKEN: ${{ secrets.INFERENCE_TOKEN }}
-          BRIGHT_PROJECT_ID: ${{ vars.BRIGHT_PROJECT_ID }}
           # Validation mode: map CodeQL findings → DAST tests, scan, and report
           # which are dynamically confirmed. No fix loop runs.
           RUN_MODE: validation

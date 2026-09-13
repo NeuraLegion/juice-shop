@@ -21,7 +21,7 @@
 #
 # Repo access uses the built-in GITHUB_TOKEN (see `permissions:`).
 
-name: Bright Agent (DAST)
+name: Bright Agent (STAR)
 
 on:
   pull_request:
@@ -100,7 +100,7 @@ jobs:
           BRIGHT_DUMP_DIR: ${{ runner.temp }}/bright-dumps
           # Optional:
           # AI_MODEL: gpt-5.4-mini
-        run: "${{ runner.temp }}/${{ env.ASSET }}"
+        run: "${{ runner.temp }}/${{ env.ASSET }}"Так
 
       # --- Artifact uploads (always run, even on failure) ---
 

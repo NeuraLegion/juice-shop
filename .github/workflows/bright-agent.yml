@@ -100,7 +100,7 @@ jobs:
           BRIGHT_DUMP_DIR: ${{ runner.temp }}/bright-dumps
           # Optional:
           # AI_MODEL: gpt-5.4-mini
-        run: "${{ runner.temp }}/${{ env.ASSET }}"Так
+        run: "${{ runner.temp }}/${{ env.ASSET }}"
 
       # --- Artifact uploads (always run, even on failure) ---
 

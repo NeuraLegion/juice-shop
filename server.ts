@@ -385,7 +385,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.route('/api/Users/:id')
     .get(security.isAuthorized(), (req: Request, res: Response, next: NextFunction) => {
       const token = utils.jwtFrom(req)
-      const decodedToken = token && security.verify(token) ? security.decode(token) as any : undefined
+      const decodedToken = token && security.verify(token) ? security.decode(token) : undefined
       const requestedUserId = Number(req.params.id)
       const authenticatedUserId = Number(decodedToken?.data?.id)
 

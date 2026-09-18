@@ -269,6 +269,11 @@ describe('/api/Feedbacks/:id', () => {
       .expect('status', 200)
   })
 
+  it('GET non-existing feedback by id does not reveal object existence', () => {
+    return frisby.get(API_URL + '/Feedbacks/-20', { headers: authHeader })
+      .expect('status', 404)
+  })
+
   it('PUT update existing feedback is forbidden via public API', () => {
     return frisby.put(API_URL + '/Feedbacks/1', {
       headers: jsonHeader,

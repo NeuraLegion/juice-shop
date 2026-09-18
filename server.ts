@@ -372,10 +372,29 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.use('/api/BasketItems/:id', security.isAuthorized())
   /* Feedbacks: GET allowed for feedback carousel, POST allowed in order to provide feedback without being logged in */
   app.use('/api/Feedbacks/:id', security.isAuthorized())
+  app.get('/api/Feedbacks/:id', security.isAuthorized(), async (req: Request, res: Response) => {
+    const feedback = await FeedbackModel.findByPk(req.params.id)
+    if (feedback != null) {
+      res.status(200).json({ status: 'success', data: feedback })
+    } else {
+      res.status(404).json({ status: 'error', data: 'Not found' })
+    }
+  })
   /* Users: Only POST is allowed in order to register a new user */
   app.get('/api/Users', security.isAuthorized())
   app.route('/api/Users/:id')
-    .get(security.isAuthorized())
+    .get(security.isAuthorized(), (req: Request, res: Response, next: NextFunction) => {
+      const token = utils.jwtFrom(req)
+      const decodedToken = token && security.verify(token) ? security.decode(token) : undefined
+      const requestedUserId = Number(req.params.id)
+      const authenticatedUserId = Number(decodedToken?.data?.id)
+
+      if (authenticatedUserId === requestedUserId || decodedToken?.data?.role === security.roles.admin) {
+        next()
+      } else {
+        res.status(403).json({ status: 'error', data: 'Forbidden' })
+      }
+    })
     .put(security.denyAll())
     .delete(security.denyAll())
   /* Products: Only GET is allowed in order to view products */ // vuln-code-snippet neutral-line changeProductChallenge
@@ -457,9 +476,9 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.get('/api/Addresss', security.appendUserId(), address.getAddress())
   app.put('/api/Addresss/:id', security.appendUserId())
   app.delete('/api/Addresss/:id', security.appendUserId(), address.delAddressById())
-  app.get('/api/Addresss/:id', security.appendUserId(), address.getAddressById())
+  app.get('/api/Addresss/:id', security.isAuthorized(), security.appendUserId(), address.getAddressById())
   app.get('/api/Deliverys', delivery.getDeliveryMethods())
-  app.get('/api/Deliverys/:id', delivery.getDeliveryMethod())
+  app.get('/api/Deliverys/:id', security.isAuthorized(), security.denyAll())
   // vuln-code-snippet end changeProductChallenge
 
   /* Verify the 2FA Token */

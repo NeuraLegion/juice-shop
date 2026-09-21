@@ -8,6 +8,10 @@
 #   • workflow_dispatch → manual full scan, launched by hand on a chosen branch.
 #   • pull_request      → PR-scoped diff scan; reacts INTO the PR (commits fixes
 #                         to its head branch, sticky comment, "Bright Agent" status).
+#                         Skipped for STAR's own `bright-scan-*` branches — those
+#                         are scans in progress (local or another CI run) already
+#                         pushing to that branch; re-triggering here would race
+#                         with it for the same branch/PR and Bright project.
 #   • issue_comment     → a repo OWNER / MEMBER / COLLABORATOR comments
 #                         `/bright-agent <guidance>` (lowercase) on a PR; runs
 #                         that PR with the guidance routed to the right phase.
@@ -54,13 +58,16 @@ jobs:
   bright-agent:
     # Trigger gates:
     #  • pull_request : same-repo PRs only (GITHUB_TOKEN is read-only on forks,
-    #                   so the agent couldn't push fixes or comment anyway).
+    #                   so the agent couldn't push fixes or comment anyway),
+    #                   excluding STAR's own `bright-scan-*` branches (a scan
+    #                   already owns that branch — don't race it).
     #  • issue_comment: a lowercase `/bright-agent` comment from a repo
     #                   OWNER / MEMBER / COLLABORATOR on a PR.
     #  • workflow_dispatch: always.
     if: >-
       (github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.full_name == github.repository) ||
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        !startsWith(github.event.pull_request.head.ref, 'bright-scan-')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
         contains(github.event.comment.body, '/bright-agent') &&

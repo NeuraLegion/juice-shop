@@ -62,10 +62,28 @@ export function quantityCheckBeforeBasketItemAddition () {
   }
 }
 
+export function retrieveBasketItem () {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = security.authenticatedUsers.from(req)
+      const item = await BasketItemModel.findOne({ where: { id: req.params.id, BasketId: user?.bid } })
+
+      if (item == null) {
+        res.sendStatus(404)
+        return
+      }
+
+      res.json({ status: 'success', data: item })
+    } catch (error) {
+      next(error as Error)
+    }
+  }
+}
+
 export function quantityCheckBeforeBasketItemUpdate () {
   return (req: Request, res: Response, next: NextFunction) => {
-    BasketItemModel.findOne({ where: { id: req.params.id } }).then((item: BasketItemModel | null) => {
-      const user = security.authenticatedUsers.from(req)
+    const user = security.authenticatedUsers.from(req)
+    BasketItemModel.findOne({ where: { id: req.params.id, BasketId: user?.bid } }).then((item: BasketItemModel | null) => {
       challengeUtils.solveIf(challenges.basketManipulateChallenge, () => { return user && req.body.BasketId && user.bid != req.body.BasketId }) // eslint-disable-line eqeqeq
       if (req.body.quantity) {
         if (item == null) {

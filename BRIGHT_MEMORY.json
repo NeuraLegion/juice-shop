@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "generatedAt": "2026-10-07T18:08:47.982Z",
+  "instructionHash": "ea95e07ffa8209de8023d0e8a3342673ac4e9dc70b07e182a977afbd2f17a93d",
+  "startup": {
+    "command": "docker compose -f docker-compose.dast.yml up -d --build",
+    "port": 3000,
+    "healthCheckPath": "/rest/admin/application-version",
+    "context": "Built and started successfully in Docker Compose. Healthcheck using /nodejs/bin/node against /rest/admin/application-version transitioned to healthy, and GET /rest/admin/application-version returned HTTP 200 with {\"version\":\"18.0.0\"}."
+  },
+  "auth": {
+    "authObjectId": "69TqL3WXXcZ6f4ybUVqzKb",
+    "protectedResource": {
+      "method": "GET",
+      "url": "/rest/basket/1"
+    },
+    "context": "Verified jwt authentication using POST /rest/user/login.\n[session-coexistence] Session coexistence inconclusive: Selected request did not reject anonymous access (HTTP 500). Session independence could not be verified; no conflict was confirmed. Using parallel scans."
+  },
+  "scanPrep": {
+    "context": "Summary: Relaxed the app’s request throttling and CAPTCHA enforcement for DAST scanning, and verified repeated login POSTs still succeed without throttling.; 2FA: Disabled the seeded 2FA requirement for the test user and confirmed the account is fully active and accessible.\nChange: Raised the built-in express-rate-limit thresholds in server.ts for /rest/user/reset-password and all 2FA POST endpoints from 100 to 999999.\nChange: Removed the IP allowlist gate from /api/Quantitys/:id by dropping the express-ipfilter middleware import and middleware use.\nChange: Neutralized server-side CAPTCHA enforcement by making verifyCaptcha() and verifyImageCaptcha() pass through without validation.\nChange: Queried the running app/container configuration and confirmed there were no additional runtime rate-limit settings exposed in the loaded config object.\nChange: Removed the seeded 2FA secret for the test admin user `wurstbrot` in `data/static/users.yml` so the app no longer enforces TOTP for that account on startup.\nChange: Restarted the `juice-shop` service under `docker compose -f docker-compose.dast.yml` to reload the seed data.\nChange: Verified that `wurstbrot@juice-sh.op` now logs in successfully without a 2FA challenge and that `/rest/user/whoami` returns `200` with user data; the user is active (`isActive=1`).\nRecovery guidance (security controls): If a future pass is needed, rebuild/recreate the juice-shop service from docker-compose.dast.yml and then verify the affected POST endpoints directly: /rest/user/login, /rest/user/reset-password, /rest/2fa/verify, /rest/2fa/setup, /rest/2fa/disable, and /api/Feedbacks. Watch for HTTP 429 or bodies mentioning too many requests/throttle/rate limit. For the current codebase, the key runtime controls were in server.ts plus CAPTCHA verification in routes/captcha.ts and routes/imageCaptcha.ts.\nRecovery guidance (2FA/MFA): If you need to recheck this later, confirm `data/static/users.yml` still has no `totpSecret` for `wurstbrot`, then restart only the app service with `docker compose -f docker-compose.dast.yml restart juice-shop` and verify by logging in as `wurstbrot@juice-sh.op` followed by `GET /rest/user/whoami` with the returned token cookie."
+  }
+}

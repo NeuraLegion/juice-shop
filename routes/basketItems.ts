@@ -5,6 +5,7 @@
 
 import { type Request, type Response, type NextFunction } from 'express'
 import { BasketItemModel } from '../models/basketitem'
+import { BasketModel } from '../models/basket'
 import { QuantityModel } from '../models/quantity'
 import * as challengeUtils from '../lib/challengeUtils'
 
@@ -14,6 +15,42 @@ import * as security from '../lib/insecurity'
 
 interface RequestWithRawBody extends Request {
   rawBody: string
+}
+
+export function ensureBasketItemOwnership () {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user = security.authenticatedUsers.from(req)
+    if (!user) {
+      res.sendStatus(401)
+      return
+    }
+
+    try {
+      const basketItem = await BasketItemModel.findOne({
+        where: { id: req.params.id },
+        attributes: ['BasketId']
+      })
+
+      if (basketItem == null) {
+        res.sendStatus(404)
+        return
+      }
+
+      const basket = await BasketModel.findOne({
+        where: { id: basketItem.BasketId, UserId: user.data.id },
+        attributes: ['id']
+      })
+
+      if (basket == null) {
+        res.sendStatus(404)
+        return
+      }
+
+      next()
+    } catch (error: any) {
+      next(error)
+    }
+  }
 }
 
 export function addBasketItem () {

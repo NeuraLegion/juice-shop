@@ -171,7 +171,7 @@ jobs:
           BRIGHT_DUMP_TURNS: "1"
           BRIGHT_DUMP_DIR: ${{ runner.temp }}/bright-dumps
           # Optional:
-          # AI_MODEL: gpt-5.4-mini
+          AI_MODEL: "gpt-6-luna,gpt-6.1-sol"
         run: "${{ runner.temp }}/${{ env.ASSET }}"
 
       # --- Artifact uploads (always run, even on failure) ---

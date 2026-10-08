@@ -369,7 +369,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.use('/rest/basket', security.isAuthorized(), security.appendUserId())
   /* BasketItems: API only accessible for authenticated users */
   app.use('/api/BasketItems', security.isAuthorized())
-  app.use('/api/BasketItems/:id', security.isAuthorized())
+  app.use('/api/BasketItems/:id', security.isAuthorized(), basketItems.ensureBasketItemOwnership())
   /* Feedbacks: GET allowed for feedback carousel, POST allowed in order to provide feedback without being logged in */
   app.use('/api/Feedbacks/:id', security.isAuthorized())
   /* Users: Only POST is allowed in order to register a new user */
@@ -431,7 +431,22 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   /* Unauthorized users are not allowed to access B2B API */
   app.use('/b2b/v2', security.isAuthorized())
   /* Check if the quantity is available in stock and limit per user not exceeded, then add item to basket */
-  app.put('/api/BasketItems/:id', security.appendUserId(), basketItems.quantityCheckBeforeBasketItemUpdate())
+  app.put('/api/BasketItems/:id', security.appendUserId(), (req: Request, res: Response, next: NextFunction) => {
+    const originalJson = res.json.bind(res)
+    const originalSend = res.send.bind(res)
+
+    const redactBasketItemId = (body: any) => {
+      if (body?.status === 'success' && body?.data && typeof body.data === 'object' && !Array.isArray(body.data) && 'id' in body.data) {
+        return { ...body, data: { ...body.data, id: null } }
+      }
+
+      return body
+    }
+
+    res.json = ((body: any) => originalJson(redactBasketItemId(body))) as typeof res.json
+    res.send = ((body: any) => originalSend(redactBasketItemId(body))) as typeof res.send
+    next()
+  }, basketItems.quantityCheckBeforeBasketItemUpdate())
   app.post('/api/BasketItems', security.appendUserId(), basketItems.quantityCheckBeforeBasketItemAddition(), basketItems.addBasketItem())
   /* Accounting users are allowed to check and update quantities */
   app.delete('/api/Quantitys/:id', security.denyAll())
@@ -449,17 +464,17 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.delete('/api/Cards/:id', security.appendUserId(), payment.delPaymentMethodById())
   app.get('/api/Cards/:id', security.appendUserId(), payment.getPaymentMethodById())
   /* PrivacyRequests: Only POST allowed for authenticated users */
-  app.post('/api/PrivacyRequests', security.isAuthorized())
+  app.post('/api/PrivacyRequests', security.isAuthorized(), security.appendUserId())
   app.get('/api/PrivacyRequests', security.denyAll())
   app.use('/api/PrivacyRequests/:id', security.denyAll())
 
   app.post('/api/Addresss', security.appendUserId())
   app.get('/api/Addresss', security.appendUserId(), address.getAddress())
-  app.put('/api/Addresss/:id', security.appendUserId())
+  app.put('/api/Addresss/:id', security.isAuthorized(), security.appendUserId(), address.updateAddress())
   app.delete('/api/Addresss/:id', security.appendUserId(), address.delAddressById())
   app.get('/api/Addresss/:id', security.appendUserId(), address.getAddressById())
   app.get('/api/Deliverys', delivery.getDeliveryMethods())
-  app.get('/api/Deliverys/:id', delivery.getDeliveryMethod())
+  app.get('/api/Deliverys/:id', security.denyAll())
   // vuln-code-snippet end changeProductChallenge
 
   /* Verify the 2FA Token */

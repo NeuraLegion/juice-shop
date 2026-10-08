@@ -14,11 +14,6 @@ interface DeliveryMultipleMethodResponse {
   data: DeliveryMethod[]
 }
 
-interface DeliverySingleMethodResponse {
-  status: string
-  data: DeliveryMethod
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -33,7 +28,9 @@ export class DeliveryService {
   }
 
   getById (id) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    return this.http.get(`${this.host}/${id}`).pipe(map((response: DeliverySingleMethodResponse) => response.data), catchError((err) => { throw err }))
+    return this.http.get(this.host).pipe(
+      map((response: DeliveryMultipleMethodResponse) => response.data.find((method) => method.id === Number(id))),
+      catchError((err) => { throw err })
+    )
   }
 }

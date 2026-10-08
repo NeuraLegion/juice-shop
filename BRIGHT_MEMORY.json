@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "generatedAt": "2026-10-08T16:37:15.857Z",
+  "instructionHash": "ea95e07ffa8209de8023d0e8a3342673ac4e9dc70b07e182a977afbd2f17a93d",
+  "startup": {
+    "command": "docker compose -f docker-compose.dast.yml up -d --build",
+    "port": 3000,
+    "healthCheckPath": "/rest/admin/application-version",
+    "context": "Built the repo's Dockerfile via the hardened Compose wrapper, started the container, and confirmed GET /rest/admin/application-version returned HTTP 200 (health became healthy)."
+  },
+  "auth": {
+    "authObjectId": "hK3fbtnVnfxrTAkCwCUaRk",
+    "protectedResource": {
+      "method": "GET",
+      "url": "/rest/basket/1"
+    },
+    "context": "Verified jwt authentication using POST /rest/user/login.\n[session-coexistence] Session coexistence passed: Both sessions retained their protected-request results (A=200, B=200). Using parallel scans."
+  },
+  "scanPrep": {
+    "context": "Summary: Rate limits and CAPTCHA enforcement were relaxed successfully and the login endpoint was stress-tested without throttling.; 2FA: 2FA/TOTP was enforced for `wurstbrot`; I disabled it, ensured the user is active, and verified authenticated access works.\nChange: Raised all discovered express-rate-limit thresholds in server.ts from 100 to 999999 for reset-password and 2FA endpoints.\nChange: Neutralized server-side CAPTCHA enforcement by making routes/captcha.ts and routes/imageCaptcha.ts verification middleware pass through.\nChange: Rebuilt/recreated the DAST compose service with docker compose -f docker-compose.dast.yml up -d --build juice-shop and verified the updated container was serving the patched image.\nChange: Validated the login/auth path with 5 rapid POSTs to /rest/user/login using admin@juice-sh.op / admin123; all returned HTTP 200 with no 429 or throttle-style rejection.\nChange: Disabled 2FA for the test admin user by clearing `totpSecret` for `wurstbrot` in `data/static/users.yml` so fresh seeds/rebuilds won’t require TOTP.\nChange: Updated the live SQLite database row for `wurstbrot` to `totpSecret=''` and confirmed `isActive=1`.\nChange: Verified the fix by logging in as `wurstbrot` and then calling a protected API endpoint successfully (200 with JSON, no 401/403 or 2FA prompt).\nRecovery guidance (security controls): If you need to reproduce or extend this pass, rebuild the targeted service with `docker compose -f docker-compose.dast.yml up -d --build juice-shop`, then verify `/rest/user/login` with several rapid POSTs using a known-good account such as `admin@juice-sh.op` / `admin123`. If any future throttling reappears, re-check `server.ts` for express-rate-limit middleware and the CAPTCHA middleware in `routes/captcha.ts` and `routes/imageCaptcha.ts`.\nRecovery guidance (2FA/MFA): If this environment is recreated, verify the seeded user still has an empty TOTP secret and remains active. Useful checks: `SELECT username,isActive,totpSecret FROM Users WHERE username='wurstbrot';` via `docker exec juice-shop-juice-shop-1 /nodejs/bin/node -e \"...\"`, then confirm `POST /rest/user/login` returns 200 and `GET /rest/user/authentication-details` returns 200 with a bearer token from the login response."
+  }
+}

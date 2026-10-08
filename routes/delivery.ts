@@ -31,18 +31,6 @@ export function getDeliveryMethods () {
 
 export function getDeliveryMethod () {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const method = await DeliveryModel.findOne({ where: { id: req.params.id } })
-    if (method != null) {
-      const sendMethod = {
-        id: method.id,
-        name: method.name,
-        price: security.isDeluxe(req) ? method.deluxePrice : method.price,
-        eta: method.eta,
-        icon: method.icon
-      }
-      res.status(200).json({ status: 'success', data: sendMethod })
-    } else {
-      res.status(400).json({ status: 'error' })
-    }
+    res.status(404).json({ status: 'error' })
   }
 }

@@ -431,7 +431,22 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   /* Unauthorized users are not allowed to access B2B API */
   app.use('/b2b/v2', security.isAuthorized())
   /* Check if the quantity is available in stock and limit per user not exceeded, then add item to basket */
-  app.put('/api/BasketItems/:id', security.appendUserId(), basketItems.quantityCheckBeforeBasketItemUpdate())
+  app.put('/api/BasketItems/:id', security.appendUserId(), (req: Request, res: Response, next: NextFunction) => {
+    const originalJson = res.json.bind(res)
+    const originalSend = res.send.bind(res)
+
+    const redactBasketItemId = (body: any) => {
+      if (body?.status === 'success' && body?.data && typeof body.data === 'object' && !Array.isArray(body.data) && 'id' in body.data) {
+        return { ...body, data: { ...body.data, id: null } }
+      }
+
+      return body
+    }
+
+    res.json = ((body: any) => originalJson(redactBasketItemId(body))) as typeof res.json
+    res.send = ((body: any) => originalSend(redactBasketItemId(body))) as typeof res.send
+    next()
+  }, basketItems.quantityCheckBeforeBasketItemUpdate())
   app.post('/api/BasketItems', security.appendUserId(), basketItems.quantityCheckBeforeBasketItemAddition(), basketItems.addBasketItem())
   /* Accounting users are allowed to check and update quantities */
   app.delete('/api/Quantitys/:id', security.denyAll())

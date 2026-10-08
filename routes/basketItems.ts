@@ -106,7 +106,8 @@ export function quantityCheckBeforeBasketItemUpdate () {
       challengeUtils.solveIf(challenges.basketManipulateChallenge, () => { return user && req.body.BasketId && user.bid != req.body.BasketId }) // eslint-disable-line eqeqeq
       if (req.body.quantity) {
         if (item == null) {
-          throw new Error('No such item found!')
+          res.sendStatus(404)
+          return
         }
         void quantityCheck(req, res, next, item.ProductId, req.body.quantity)
       } else {

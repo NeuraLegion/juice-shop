@@ -19,18 +19,35 @@ export function getAddressById () {
     if (address != null) {
       res.status(200).json({ status: 'success', data: address })
     } else {
-      res.status(400).json({ status: 'error', data: 'Malicious activity detected.' })
+      res.status(404).json({ status: 'error', data: 'Address not found.' })
     }
+  }
+}
+
+export function updateAddress () {
+  return async (req: Request, res: Response) => {
+    const address = await AddressModel.findOne({ where: { id: req.params.id, UserId: req.body.UserId } })
+
+    const updateFields = {
+      fullName: req.body.fullName,
+      mobileNum: req.body.mobileNum,
+      zipCode: req.body.zipCode,
+      streetAddress: req.body.streetAddress,
+      city: req.body.city,
+      state: req.body.state,
+      country: req.body.country
+    }
+
+    if (address != null) {
+      await address.update(updateFields)
+    }
+    res.status(200).json({ status: 'success', data: updateFields })
   }
 }
 
 export function delAddressById () {
   return async (req: Request, res: Response) => {
-    const address = await AddressModel.destroy({ where: { id: req.params.id, UserId: req.body.UserId } })
-    if (address) {
-      res.status(200).json({ status: 'success', data: 'Address deleted successfully.' })
-    } else {
-      res.status(400).json({ status: 'error', data: 'Malicious activity detected.' })
-    }
+    await AddressModel.destroy({ where: { id: req.params.id, UserId: req.body.UserId } })
+    res.status(200).json({ status: 'success', data: 'Address deleted successfully.' })
   }
 }

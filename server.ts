@@ -455,7 +455,7 @@ restoreOverwrittenFilesWithOriginals().then(() => {
 
   app.post('/api/Addresss', security.appendUserId())
   app.get('/api/Addresss', security.appendUserId(), address.getAddress())
-  app.put('/api/Addresss/:id', security.appendUserId())
+  app.put('/api/Addresss/:id', security.isAuthorized(), security.appendUserId(), address.updateAddress())
   app.delete('/api/Addresss/:id', security.appendUserId(), address.delAddressById())
   app.get('/api/Addresss/:id', security.appendUserId(), address.getAddressById())
   app.get('/api/Deliverys', delivery.getDeliveryMethods())

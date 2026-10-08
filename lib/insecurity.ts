@@ -9,7 +9,6 @@ import { type Request, type Response, type NextFunction } from 'express'
 import { type UserModel } from 'models/user'
 import expressJwt from 'express-jwt'
 import jwt from 'jsonwebtoken'
-import jws from 'jws'
 import sanitizeHtmlLib from 'sanitize-html'
 import sanitizeFilenameLib from 'sanitize-filename'
 import * as utils from './utils'
@@ -51,11 +50,85 @@ export const cutOffPoisonNullByte = (str: string) => {
   return str
 }
 
-export const isAuthorized = () => expressJwt(({ secret: publicKey, algorithms: ['RS256'] }) as any)
+const decodeBase64Url = (value: string) => {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padding = (4 - (normalized.length % 4)) % 4
+  return Buffer.from(normalized + '='.repeat(padding), 'base64')
+}
+
+const parseJwtJsonSegment = <T>(value: string): T | undefined => {
+  try {
+    return JSON.parse(decodeBase64Url(value).toString('utf8')) as T
+  } catch {
+    return undefined
+  }
+}
+
+const verifiedPayloadFrom = (token?: string): any => {
+  if (!token) {
+    return undefined
+  }
+
+  const parts = token.split('.')
+  if (parts.length !== 3 || parts[2].trim() === '') {
+    return undefined
+  }
+
+  const [encodedHeader, encodedPayload, encodedSignature] = parts
+  const header = parseJwtJsonSegment<{ alg?: string }>(encodedHeader)
+  if (header?.alg !== 'RS256') {
+    return undefined
+  }
+
+  const payload = parseJwtJsonSegment<Record<string, any>>(encodedPayload)
+  if (payload == null || Array.isArray(payload)) {
+    return undefined
+  }
+
+  const verifier = crypto.createVerify('RSA-SHA256')
+  verifier.update(`${encodedHeader}.${encodedPayload}`)
+  verifier.end()
+
+  if (!verifier.verify(publicKey, decodeBase64Url(encodedSignature))) {
+    return undefined
+  }
+
+  const now = Math.floor(Date.now() / 1000)
+  if (typeof payload.nbf === 'number' && payload.nbf > now) {
+    return undefined
+  }
+  if (typeof payload.exp === 'number' && payload.exp <= now) {
+    return undefined
+  }
+
+  return payload
+}
+
+const hasUserData = (payload: any): payload is ResponseWithUser => {
+  return payload?.data?.id !== undefined
+}
+
+export const isAuthorized = () => (req: Request, res: Response, next: NextFunction) => {
+  const token = utils.jwtFrom(req)
+  const authenticatedToken = verifiedPayloadFrom(token)
+
+  if (authenticatedToken === undefined) {
+    res.status(401).send('Unauthorized')
+    return
+  }
+
+  res.locals.authenticatedToken = authenticatedToken
+
+  if (token && hasUserData(authenticatedToken) && authenticatedUsers.tokenMap[utils.unquote(token)] === undefined) {
+    authenticatedUsers.put(token, authenticatedToken)
+  }
+
+  next()
+}
 export const denyAll = () => expressJwt({ secret: '' + Math.random() } as any)
 export const authorize = (user = {}) => jwt.sign(user, privateKey, { expiresIn: '6h', algorithm: 'RS256' })
-export const verify = (token: string) => token ? (jws.verify as ((token: string, secret: string) => boolean))(token, publicKey) : false
-export const decode = (token: string) => { return jws.decode(token)?.payload }
+export const verify = (token: string) => verifiedPayloadFrom(token) !== undefined
+export const decode = (token: string) => verifiedPayloadFrom(token)
 
 export const sanitizeHtml = (html: string) => sanitizeHtmlLib(html)
 export const sanitizeLegacy = (input = '') => input.replace(/<(?:\w+)\W+?[\w]/gi, '')
@@ -73,11 +146,28 @@ export const authenticatedUsers: IAuthenticatedUsers = {
   tokenMap: {},
   idMap: {},
   put: function (token: string, user: ResponseWithUser) {
-    this.tokenMap[token] = user
-    this.idMap[user.data.id] = token
+    const normalizedToken = utils.unquote(token)
+    this.tokenMap[normalizedToken] = user
+    this.idMap[user.data.id] = normalizedToken
   },
   get: function (token?: string) {
-    return token ? this.tokenMap[utils.unquote(token)] : undefined
+    if (!token) {
+      return undefined
+    }
+
+    const normalizedToken = utils.unquote(token)
+    const cachedUser = this.tokenMap[normalizedToken]
+    if (cachedUser !== undefined) {
+      return cachedUser
+    }
+
+    const decodedToken = verifiedPayloadFrom(normalizedToken)
+    if (hasUserData(decodedToken)) {
+      this.put(normalizedToken, decodedToken)
+      return decodedToken
+    }
+
+    return undefined
   },
   tokenOf: function (user: UserModel) {
     return user ? this.idMap[user.id] : undefined
@@ -177,7 +267,11 @@ export const isCustomer = (req: Request) => {
 export const appendUserId = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.body.UserId = authenticatedUsers.tokenMap[utils.jwtFrom(req)].data.id
+      const authenticatedUser = (res.locals.authenticatedToken as ResponseWithUser | undefined) ?? authenticatedUsers.get(utils.jwtFrom(req))
+      if (authenticatedUser?.data?.id === undefined) {
+        throw new Error('Authentication required')
+      }
+      req.body.UserId = authenticatedUser.data.id
       next()
     } catch (error: any) {
       res.status(401).json({ status: 'error', message: error })
@@ -187,15 +281,10 @@ export const appendUserId = () => {
 
 export const updateAuthenticatedUsers = () => (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.token || utils.jwtFrom(req)
-  if (token) {
-    jwt.verify(token, publicKey, { algorithms: ['RS256'] }, (err: Error | null, decoded: any) => {
-      if (err === null) {
-        if (authenticatedUsers.get(token) === undefined) {
-          authenticatedUsers.put(token, decoded)
-          res.cookie('token', token)
-        }
-      }
-    })
+  const decodedToken = verifiedPayloadFrom(token)
+  if (token && hasUserData(decodedToken) && authenticatedUsers.tokenMap[utils.unquote(token)] === undefined) {
+    authenticatedUsers.put(token, decodedToken)
+    res.cookie('token', token)
   }
   next()
 }

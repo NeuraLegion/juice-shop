@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2014-2025 Bjoern Kimminich & the OWASP Juice Shop contributors.
  * SPDX-License-Identifier: MIT
  */
 
 import { type NextFunction, type Request, type Response } from 'express'
 import yaml from 'js-yaml'
 import fs from 'node:fs'
-
 import { getCodeChallenges } from '../lib/codingChallenges'
 import * as challengeUtils from '../lib/challengeUtils'
 import * as accuracy from '../lib/accuracy'
@@ -31,6 +29,11 @@ const setStatusCode = (error: any) => {
   }
 }
 
+const sanitizeChallengeKey = (challengeKey: string) => {
+  // Simple validation to ensure challenge key is alphanumeric.
+  return /^[a-zA-Z0-9_-]+$/.test(challengeKey)
+}
+
 export const retrieveCodeSnippet = async (challengeKey: string) => {
   const codeChallenges = await getCodeChallenges()
   if (codeChallenges.has(challengeKey)) {
@@ -41,9 +44,16 @@ export const retrieveCodeSnippet = async (challengeKey: string) => {
 
 export const serveCodeSnippet = () => async (req: Request<SnippetRequestBody, Record<string, unknown>, Record<string, unknown>>, res: Response, next: NextFunction) => {
   try {
-    const snippetData = await retrieveCodeSnippet(req.params.challenge)
+    const challengeKey = req.params.challenge
+
+    if (!sanitizeChallengeKey(challengeKey)) {
+      res.status(400).json({ status: 'error', error: 'Invalid challenge key format.' })
+      return
+    }
+
+    const snippetData = await retrieveCodeSnippet(challengeKey)
     if (snippetData == null) {
-      res.status(404).json({ status: 'error', error: `No code challenge for challenge key: ${req.params.challenge}` })
+      res.status(404).json({ status: 'error', error: `No code challenge for challenge key: ${challengeKey}` })
       return
     }
     res.status(200).json({ snippet: snippetData.snippet })
